@@ -23,7 +23,7 @@ const ExportButton = ({ data }: ExportButtonProps) => {
   const getAbnormalTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       suture_unvisited: '拆线未回访',
-      ortho_overdue: '复诊超期',
+      ortho_overdue: '正畸超6周未复诊',
       no_show_repeat: '多次爽约',
     };
     return labels[type] || type;
@@ -38,8 +38,18 @@ const ExportButton = ({ data }: ExportButtonProps) => {
     return labels[status] || status;
   };
 
+  const getAssigneeStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      undispatched: '待分派',
+      dispatched: '已分派',
+      processing: '跟进中',
+      completed: '已完成',
+    };
+    return labels[status] || status;
+  };
+
   const exportCSV = () => {
-    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态'];
+    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态', '负责人', '分派状态'];
     
     const rows = data.map(p => [
       p.name,
@@ -52,6 +62,8 @@ const ExportButton = ({ data }: ExportButtonProps) => {
       p.daysOverdue,
       p.noShowCount,
       getStatusLabel(p.status),
+      p.assignee || '未分派',
+      getAssigneeStatusLabel(p.assigneeStatus),
     ]);
 
     const csvContent = [
@@ -84,6 +96,8 @@ const ExportButton = ({ data }: ExportButtonProps) => {
       超期天数: p.daysOverdue,
       爽约次数: p.noShowCount,
       状态: getStatusLabel(p.status),
+      负责人: p.assignee || '未分派',
+      分派状态: getAssigneeStatusLabel(p.assigneeStatus),
     }));
 
     const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });

@@ -3,9 +3,10 @@ import type { DoctorData } from '@/types';
 
 interface DoctorRankListProps {
   data: DoctorData[];
+  onDoctorClick?: (doctor: DoctorData) => void;
 }
 
-const DoctorRankList = ({ data }: DoctorRankListProps) => {
+const DoctorRankList = ({ data, onDoctorClick }: DoctorRankListProps) => {
   const sortedDoctors = [...data].sort((a, b) => b.score - a.score);
 
   const getRankBadgeClass = (rank: number) => {
@@ -29,7 +30,8 @@ const DoctorRankList = ({ data }: DoctorRankListProps) => {
         {sortedDoctors.map((doctor, index) => (
           <div 
             key={doctor.id} 
-            className="px-6 py-4 hover:bg-neutral-50/50 transition-colors"
+            className="px-6 py-4 hover:bg-neutral-50/50 transition-colors cursor-pointer"
+            onClick={() => onDoctorClick?.(doctor)}
           >
             <div className="flex items-center gap-4">
               <div className={getRankBadgeClass(index + 1)}>

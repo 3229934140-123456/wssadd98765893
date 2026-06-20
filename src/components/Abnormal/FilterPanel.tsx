@@ -2,20 +2,23 @@ import { Filter, Search, X } from 'lucide-react';
 
 type AbnormalType = 'all' | 'suture_unvisited' | 'ortho_overdue' | 'no_show_repeat';
 type StatusType = 'all' | 'pending' | 'contacted' | 'recovered';
+type AssigneeStatusType = 'all' | 'undispatched' | 'dispatched' | 'processing' | 'completed';
 
 interface FilterPanelProps {
   abnormalType: AbnormalType;
   status: StatusType;
+  assigneeStatus: AssigneeStatusType;
   searchKeyword: string;
   onAbnormalTypeChange: (type: AbnormalType) => void;
   onStatusChange: (status: StatusType) => void;
+  onAssigneeStatusChange: (status: AssigneeStatusType) => void;
   onSearchChange: (keyword: string) => void;
 }
 
 const abnormalTypes = [
   { value: 'all', label: '全部异常' },
   { value: 'suture_unvisited', label: '术后拆线未回访' },
-  { value: 'ortho_overdue', label: '复诊超期' },
+  { value: 'ortho_overdue', label: '正畸超6周未复诊' },
   { value: 'no_show_repeat', label: '多次爽约' },
 ];
 
@@ -26,12 +29,22 @@ const statuses = [
   { value: 'recovered', label: '已追回' },
 ];
 
+const assigneeStatuses = [
+  { value: 'all', label: '全部分派' },
+  { value: 'undispatched', label: '待分派' },
+  { value: 'dispatched', label: '已分派' },
+  { value: 'processing', label: '跟进中' },
+  { value: 'completed', label: '已完成' },
+];
+
 const FilterPanel = ({
   abnormalType,
   status,
+  assigneeStatus,
   searchKeyword,
   onAbnormalTypeChange,
   onStatusChange,
+  onAssigneeStatusChange,
   onSearchChange,
 }: FilterPanelProps) => {
   return (
@@ -65,6 +78,21 @@ const FilterPanel = ({
                 key={s.value}
                 onClick={() => onStatusChange(s.value as StatusType)}
                 className={status === s.value ? 'filter-chip-active' : 'filter-chip-inactive'}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium text-neutral-500 mb-2 block">分派状态</label>
+          <div className="flex flex-wrap gap-2">
+            {assigneeStatuses.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => onAssigneeStatusChange(s.value as AssigneeStatusType)}
+                className={assigneeStatus === s.value ? 'filter-chip-active' : 'filter-chip-inactive'}
               >
                 {s.label}
               </button>

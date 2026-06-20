@@ -4,7 +4,7 @@ import StatCard from '@/components/Overview/StatCard';
 import ProjectFilter from '@/components/Overview/ProjectFilter';
 import ClinicTable from '@/components/Overview/ClinicTable';
 import TrendChart from '@/components/Overview/TrendChart';
-import { getClinicsByTreatment, getTotalStats } from '@/data/mockData';
+import { getClinicsByTreatment, getTotalStats, clinicTreatmentBreakdown } from '@/data/mockData';
 import type { TreatmentType } from '@/types';
 
 const OverviewPage = () => {
@@ -60,7 +60,7 @@ const OverviewPage = () => {
 
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
-            <ClinicTable data={clinicData} />
+            <ClinicTable data={clinicData} breakdownData={clinicTreatmentBreakdown} />
           </div>
           <div className="col-span-1">
             <TrendChart />

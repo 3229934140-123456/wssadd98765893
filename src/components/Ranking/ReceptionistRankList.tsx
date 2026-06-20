@@ -3,9 +3,10 @@ import type { ReceptionistData } from '@/types';
 
 interface ReceptionistRankListProps {
   data: ReceptionistData[];
+  onReceptionistClick?: (receptionist: ReceptionistData) => void;
 }
 
-const ReceptionistRankList = ({ data }: ReceptionistRankListProps) => {
+const ReceptionistRankList = ({ data, onReceptionistClick }: ReceptionistRankListProps) => {
   const sortedReceptionists = [...data].sort((a, b) => b.score - a.score);
 
   const getRankBadgeClass = (rank: number) => {
@@ -29,7 +30,8 @@ const ReceptionistRankList = ({ data }: ReceptionistRankListProps) => {
         {sortedReceptionists.map((receptionist, index) => (
           <div 
             key={receptionist.id} 
-            className="px-6 py-4 hover:bg-neutral-50/50 transition-colors"
+            className="px-6 py-4 hover:bg-neutral-50/50 transition-colors cursor-pointer"
+            onClick={() => onReceptionistClick?.(receptionist)}
           >
             <div className="flex items-center gap-4">
               <div className={getRankBadgeClass(index + 1)}>

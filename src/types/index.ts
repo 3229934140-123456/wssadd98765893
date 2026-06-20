@@ -10,6 +10,19 @@ export interface ClinicData {
   arrivalRate: number;
 }
 
+export interface ClinicTreatmentBreakdown {
+  clinicId: string;
+  clinicName: string;
+  treatment: string;
+  appointments: number;
+  arrivals: number;
+  noShows: number;
+  reschedules: number;
+  noShowRate: number;
+  rescheduleRate: number;
+  arrivalRate: number;
+}
+
 export interface DoctorData {
   id: string;
   name: string;
@@ -20,6 +33,17 @@ export interface DoctorData {
   appointmentRate: number;
   arrivalRate: number;
   score: number;
+  funnel: DoctorFunnel;
+}
+
+export interface DoctorFunnel {
+  suggestions: number;
+  appointments: number;
+  appointmentRate: number;
+  reminders: number;
+  reminderRate: number;
+  arrivals: number;
+  arrivalRate: number;
 }
 
 export interface ReceptionistData {
@@ -31,6 +55,17 @@ export interface ReceptionistData {
   reminderRate: number;
   responseRate: number;
   score: number;
+  funnel: ReceptionistFunnel;
+}
+
+export interface ReceptionistFunnel {
+  totalAssigned: number;
+  reminded: number;
+  reminderRate: number;
+  responded: number;
+  responseRate: number;
+  arrived: number;
+  arrivalRate: number;
 }
 
 export interface AbnormalPatient {
@@ -45,6 +80,14 @@ export interface AbnormalPatient {
   daysOverdue: number;
   noShowCount: number;
   status: 'pending' | 'contacted' | 'recovered';
+  assignee: string;
+  assigneeStatus: 'undispatched' | 'dispatched' | 'processing' | 'completed';
+}
+
+export interface CustomerService {
+  id: string;
+  name: string;
+  clinicName: string;
 }
 
 export interface TrendData {

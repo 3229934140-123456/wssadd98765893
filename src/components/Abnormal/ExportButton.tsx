@@ -49,22 +49,28 @@ const ExportButton = ({ data }: ExportButtonProps) => {
   };
 
   const exportCSV = () => {
-    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态', '负责人', '分派状态'];
+    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态', '负责人', '分派状态', '来源'];
     
-    const rows = data.map(p => [
-      p.name,
-      p.phone,
-      p.clinicName,
-      p.treatmentType,
-      getAbnormalTypeLabel(p.abnormalType),
-      p.abnormalDetail,
-      p.lastVisitDate,
-      p.daysOverdue,
-      p.noShowCount,
-      getStatusLabel(p.status),
-      p.assignee || '未分派',
-      getAssigneeStatusLabel(p.assigneeStatus),
-    ]);
+    const rows = data.map(p => {
+      const sourceLabel = p.source 
+        ? `${p.source.type === 'doctor' ? '医生' : '前台'} ${p.source.personName} - ${p.source.stageLabel}`
+        : '-';
+      return [
+        p.name,
+        p.phone,
+        p.clinicName,
+        p.treatmentType,
+        getAbnormalTypeLabel(p.abnormalType),
+        p.abnormalDetail,
+        p.lastVisitDate,
+        p.daysOverdue,
+        p.noShowCount,
+        getStatusLabel(p.status),
+        p.assignee || '未分派',
+        getAssigneeStatusLabel(p.assigneeStatus),
+        sourceLabel,
+      ];
+    });
 
     const csvContent = [
       headers.join(','),
@@ -98,6 +104,9 @@ const ExportButton = ({ data }: ExportButtonProps) => {
       状态: getStatusLabel(p.status),
       负责人: p.assignee || '未分派',
       分派状态: getAssigneeStatusLabel(p.assigneeStatus),
+      来源: p.source 
+        ? `${p.source.type === 'doctor' ? '医生' : '前台'} ${p.source.personName} - ${p.source.stageLabel}`
+        : '-',
     }));
 
     const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });

@@ -1,6 +1,7 @@
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
-import type { ClinicData, ClinicTreatmentBreakdown } from '@/types';
+import type { ClinicData, ClinicTreatmentBreakdown, TreatmentType } from '@/types';
+import { TREATMENT_TYPES } from '@/types';
 
 type SortKey = 'name' | 'appointments' | 'arrivals' | 'arrivalRate' | 'noShowRate' | 'rescheduleRate';
 type SortOrder = 'asc' | 'desc';
@@ -8,13 +9,22 @@ type SortOrder = 'asc' | 'desc';
 interface ClinicTableProps {
   data: ClinicData[];
   breakdownData: ClinicTreatmentBreakdown[];
+  treatmentType: TreatmentType;
   onClinicClick?: (clinic: ClinicData) => void;
 }
 
-const ClinicTable = ({ data, breakdownData, onClinicClick }: ClinicTableProps) => {
+const ClinicTable = ({ data, breakdownData, treatmentType, onClinicClick }: ClinicTableProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('noShowRate');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const filteredBreakdownByClinic = (clinicId: string) => {
+    if (treatmentType === 'all') {
+      return breakdownData.filter(b => b.clinicId === clinicId);
+    }
+    const label = TREATMENT_TYPES.find(t => t.value === treatmentType)?.label;
+    return breakdownData.filter(b => b.clinicId === clinicId && b.treatment === label);
+  };
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -137,7 +147,7 @@ const ClinicTable = ({ data, breakdownData, onClinicClick }: ClinicTableProps) =
           <tbody className="divide-y divide-neutral-100">
             {sortedData.map((clinic, index) => {
               const isExpanded = expandedRows.has(clinic.id);
-              const clinicBreakdown = breakdownData.filter(item => item.clinicId === clinic.id);
+              const clinicBreakdown = filteredBreakdownByClinic(clinic.id);
 
               return (
                 <>

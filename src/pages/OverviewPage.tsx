@@ -72,6 +72,7 @@ const OverviewPage = () => {
               data={clinicData} 
               breakdownData={clinicTreatmentBreakdown} 
               onClinicClick={handleClinicClick}
+              treatmentType={selectedType}
             />
           </div>
           <div className="col-span-1">
@@ -115,6 +116,7 @@ const OverviewPage = () => {
         onClose={() => setDrawerOpen(false)}
         clinic={selectedClinic}
         weeklyTrendData={selectedClinic ? getWeeklyTrendByClinic(selectedClinic.id) : []}
+        globalTreatmentType={selectedType}
       />
     </Layout>
   );

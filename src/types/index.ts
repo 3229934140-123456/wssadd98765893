@@ -126,6 +126,12 @@ export interface AbnormalPatient {
   status: 'pending' | 'contacted' | 'recovered';
   assignee: string;
   assigneeStatus: 'undispatched' | 'dispatched' | 'processing' | 'completed';
+  source?: {
+    type: 'doctor' | 'receptionist';
+    personName: string;
+    stage: string;
+    stageLabel: string;
+  };
 }
 
 export interface CustomerService {

@@ -221,6 +221,7 @@ const RankingPage = () => {
           onClose={() => setDropoffPanelOpen(false)}
           personType={attributionTarget.type}
           personName={attributionTarget.personName}
+          personId={attributionTarget.personId}
           stage={dropoffStage}
           patients={getDropoffList()}
         />

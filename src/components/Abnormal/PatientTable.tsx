@@ -1,4 +1,4 @@
-import { Phone, Clock, AlertTriangle, UserPlus, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, UserPlus, ArrowRight, CheckCircle2, ArrowUpRight } from 'lucide-react';
 import type { AbnormalPatient } from '@/types';
 
 interface PatientTableProps {
@@ -157,6 +157,12 @@ const PatientTable = ({ data, onStatusChange, onAssigneeStatusChange, selectedId
                         <Phone className="w-3 h-3" />
                         {patient.phone}
                       </p>
+                      {patient.source && (
+                        <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-medium">
+                          <ArrowUpRight className="w-3 h-3" />
+                          {patient.source.type === 'doctor' ? '医生' : '前台'} {patient.source.personName} · {patient.source.stageLabel}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </td>

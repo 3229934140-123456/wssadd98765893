@@ -66,11 +66,24 @@ const DropoffPatientPanel = ({
     if (selectedIds.length === 0 || !selectedCS) return;
     const selectedPatients = patients.filter(p => selectedIds.includes(p.id));
     const cs = customerServices.find(c => c.name === selectedCS);
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const nowStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     
     const newAbnormalPatients: AbnormalPatient[] = selectedPatients.map((p, i) => {
       const day = new Date();
       day.setDate(day.getDate() - 7 - i);
       const dateStr = day.toISOString().slice(0, 10);
+      const isDispatched = !!cs;
+      const followUpRecords = isDispatched ? [{
+        id: `f_${Date.now()}_${i}`,
+        patientId: `attr_${Date.now()}_${i}`,
+        fromStatus: 'undispatched' as const,
+        toStatus: 'dispatched' as const,
+        operator: '店长',
+        timestamp: nowStr,
+        note: `协同归因转来，分派给 ${selectedCS}`,
+      }] : [];
       return {
         id: `attr_${Date.now()}_${i}`,
         name: p.name,
@@ -84,13 +97,15 @@ const DropoffPatientPanel = ({
         noShowCount: 1,
         status: 'pending',
         assignee: selectedCS,
-        assigneeStatus: cs ? 'dispatched' : 'undispatched',
+        assigneeStatus: isDispatched ? 'dispatched' : 'undispatched',
+        dispatchedAt: isDispatched ? nowStr : undefined,
         source: {
           type: personType,
           personName,
           stage,
           stageLabel: stageInfo?.label || stage,
         },
+        followUpRecords,
       };
     });
 

@@ -112,6 +112,16 @@ export interface ReceptionistFunnel {
   arrivalRate: number;
 }
 
+export interface FollowUpRecord {
+  id: string;
+  patientId: string;
+  fromStatus: 'undispatched' | 'dispatched' | 'processing' | 'completed';
+  toStatus: 'undispatched' | 'dispatched' | 'processing' | 'completed';
+  operator: string;
+  timestamp: string;
+  note?: string;
+}
+
 export interface AbnormalPatient {
   id: string;
   name: string;
@@ -126,12 +136,14 @@ export interface AbnormalPatient {
   status: 'pending' | 'contacted' | 'recovered';
   assignee: string;
   assigneeStatus: 'undispatched' | 'dispatched' | 'processing' | 'completed';
+  dispatchedAt?: string;
   source?: {
     type: 'doctor' | 'receptionist';
     personName: string;
     stage: string;
     stageLabel: string;
   };
+  followUpRecords: FollowUpRecord[];
 }
 
 export interface CustomerService {

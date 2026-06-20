@@ -42,13 +42,22 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
     return ['正畸', '种植', '牙周', '儿牙', '综合'];
   }, [globalTreatmentType]);
 
+  const filteredWeeklyTrendData = useMemo(() => {
+    if (globalTreatmentType === 'all') {
+      return weeklyTrendData;
+    }
+    const label = TREATMENT_TYPES.find(t => t.value === globalTreatmentType)?.label;
+    if (!label) return weeklyTrendData;
+    return weeklyTrendData.filter(t => t.treatment === label);
+  }, [weeklyTrendData, globalTreatmentType]);
+
   const chartData = useMemo(() => {
     if (!clinic) return [];
     const weeks = ['week1', 'week2', 'week3', 'week4'];
     const weekLabels = ['第1周', '第2周', '第3周', '第4周'];
     
     return weeks.map((week, i) => {
-      const weekData = weeklyTrendData.filter(t => t.week === week);
+      const weekData = filteredWeeklyTrendData.filter(t => t.week === week);
       const filtered = selectedTreatment === 'all' 
         ? weekData 
         : weekData.filter(t => t.treatment === selectedTreatment);
@@ -72,7 +81,7 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
         改约率: rescheduleRate,
       };
     });
-  }, [weeklyTrendData, selectedTreatment, clinic]);
+  }, [filteredWeeklyTrendData, selectedTreatment, clinic]);
 
   const detectBreakpoint = useMemo(() => {
     if (chartData.length < 2) return null;
@@ -88,7 +97,7 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
 
   const treatmentSummary = useMemo(() => {
     return TREATMENTS.map(treatment => {
-      const tData = weeklyTrendData.filter(t => t.treatment === treatment);
+      const tData = filteredWeeklyTrendData.filter(t => t.treatment === treatment);
       const latest = tData.filter(t => t.week === 'week4')[0];
       const totalAppointments = tData.reduce((sum, t) => sum + t.appointments, 0);
       const totalArrivals = tData.reduce((sum, t) => sum + t.arrivals, 0);
@@ -112,23 +121,26 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
         avgRescheduleRate,
       };
     });
-  }, [weeklyTrendData, TREATMENTS]);
+  }, [filteredWeeklyTrendData, TREATMENTS]);
 
   const reasonViewPieData = useMemo(() => {
     if (!reasonViewTreatment) return null;
-    const tData = weeklyTrendData.filter(t => t.treatment === reasonViewTreatment);
+    const tData = filteredWeeklyTrendData.filter(t => t.treatment === reasonViewTreatment);
     const latest = tData.find(t => t.week === 'week4');
     if (!latest || latest.appointments === 0) return null;
+    const total = latest.appointments;
+    const noShows = latest.noShows;
+    const reschedules = latest.reschedules;
     return [
       { name: '实际到诊', value: latest.arrivals, rate: latest.arrivalRate, color: '#059669' },
-      { name: '爽约', value: latest.noShows, rate: latest.noShowRate, color: '#DC2626' },
-      { name: '改约', value: latest.reschedules, rate: latest.rescheduleRate, color: '#F59E0B' },
+      { name: '爽约', value: noShows, rate: +((noShows / total) * 100).toFixed(1), color: '#DC2626' },
+      { name: '改约', value: reschedules, rate: +((reschedules / total) * 100).toFixed(1), color: '#F59E0B' },
     ];
-  }, [reasonViewTreatment, weeklyTrendData]);
+  }, [reasonViewTreatment, filteredWeeklyTrendData]);
 
   const reasonViewTrendData = useMemo(() => {
     if (!reasonViewTreatment) return [];
-    const tData = weeklyTrendData.filter(t => t.treatment === reasonViewTreatment);
+    const tData = filteredWeeklyTrendData.filter(t => t.treatment === reasonViewTreatment);
     return tData.map(t => ({
       week: t.weekLabel,
       爽约数: t.noShows,
@@ -136,7 +148,7 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
       爽约率: t.noShowRate,
       改约率: t.rescheduleRate,
     }));
-  }, [reasonViewTreatment, weeklyTrendData]);
+  }, [reasonViewTreatment, filteredWeeklyTrendData]);
 
   if (!isOpen || !clinic) return null;
 
@@ -174,16 +186,18 @@ const ClinicDetailDrawer = ({ isOpen, onClose, clinic, weeklyTrendData, globalTr
         )}
 
         <div className="px-6 pt-4 flex items-center gap-2">
-          <button
-            onClick={() => setSelectedTreatment('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              selectedTreatment === 'all'
-                ? 'bg-primary-500 text-white shadow-sm'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-            }`}
-          >
-            全部项目
-          </button>
+          {globalTreatmentType === 'all' && (
+            <button
+              onClick={() => setSelectedTreatment('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                selectedTreatment === 'all'
+                  ? 'bg-primary-500 text-white shadow-sm'
+                  : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+              }`}
+            >
+              全部项目
+            </button>
+          )}
           {TREATMENTS.map(t => (
             <button
               key={t}

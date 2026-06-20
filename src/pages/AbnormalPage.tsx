@@ -1,22 +1,32 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import FilterPanel from '@/components/Abnormal/FilterPanel';
 import PatientTable from '@/components/Abnormal/PatientTable';
 import ExportButton from '@/components/Abnormal/ExportButton';
 import DispatchModal from '@/components/Abnormal/DispatchModal';
+import PatientDetailDrawer from '@/components/Abnormal/PatientDetailDrawer';
+import FollowUpModal from '@/components/Abnormal/FollowUpModal';
 import { abnormalPatients, customerServices } from '@/data/mockData';
-import type { AbnormalPatient } from '@/types';
-import { AlertTriangle, Users, Clock, PhoneCall, UserCheck, Inbox, UserPlus, Loader2, CheckCircle2 } from 'lucide-react';
+import type { AbnormalPatient, FollowUpRecord } from '@/types';
+import { AlertTriangle, Users, Clock, PhoneCall, UserCheck, Inbox, UserPlus, Loader2, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 type AbnormalType = 'all' | 'suture_unvisited' | 'ortho_overdue' | 'no_show_repeat';
 type StatusType = 'all' | 'pending' | 'contacted' | 'recovered';
 type AssigneeStatusType = 'all' | 'undispatched' | 'dispatched' | 'processing' | 'completed';
+type OverdueFilterType = 'all' | 'overdue';
 
-const getInitialPatients = () => {
+const STORAGE_KEY = 'abnormalPatients_v2';
+const OVERDUE_HOURS = 24;
+
+const getInitialPatients = (): AbnormalPatient[] => {
   try {
-    const stored = sessionStorage.getItem('abnormalPatients');
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      return parsed.map((p: AbnormalPatient) => ({
+        ...p,
+        followUpRecords: p.followUpRecords || [],
+      }));
     }
   } catch {
     // ignore
@@ -24,26 +34,54 @@ const getInitialPatients = () => {
   return abnormalPatients;
 };
 
+const generateId = () => `f_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+const nowStr = () => {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+};
+
 const AbnormalPage = () => {
   const [abnormalType, setAbnormalType] = useState<AbnormalType>('all');
   const [status, setStatus] = useState<StatusType>('all');
   const [assigneeStatus, setAssigneeStatus] = useState<AssigneeStatusType>('all');
+  const [overdueFilter, setOverdueFilter] = useState<OverdueFilterType>('all');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [patients, setPatients] = useState<AbnormalPatient[]>(getInitialPatients);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [dispatchTargetIds, setDispatchTargetIds] = useState<string[]>([]);
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<AbnormalPatient | null>(null);
+  const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
+  const [followUpTarget, setFollowUpTarget] = useState<AbnormalPatient | null>(null);
+  const [followUpTargetStatus, setFollowUpTargetStatus] = useState<'processing' | 'completed' | null>(null);
 
   useEffect(() => {
-    sessionStorage.setItem('abnormalPatients', JSON.stringify(patients));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(patients));
   }, [patients]);
 
   useEffect(() => {
     const onNewPatients = (e: CustomEvent) => {
-      setPatients(prev => [...e.detail, ...prev]);
+      const newPatients: AbnormalPatient[] = e.detail.map((p: AbnormalPatient) => ({
+        ...p,
+        followUpRecords: p.followUpRecords || [],
+      }));
+      setPatients(prev => [...newPatients, ...prev]);
     };
     window.addEventListener('abnormal:newPatients' as any, onNewPatients as any);
     return () => window.removeEventListener('abnormal:newPatients' as any, onNewPatients as any);
+  }, []);
+
+  const isOverdue = useCallback((patient: AbnormalPatient): boolean => {
+    if (patient.assigneeStatus !== 'dispatched' || !patient.dispatchedAt) {
+      return false;
+    }
+    const dispatchedTime = new Date(patient.dispatchedAt).getTime();
+    const now = Date.now();
+    const diffHours = (now - dispatchedTime) / (1000 * 60 * 60);
+    return diffHours >= OVERDUE_HOURS;
   }, []);
 
   const filteredPatients = useMemo(() => {
@@ -51,10 +89,11 @@ const AbnormalPage = () => {
       if (abnormalType !== 'all' && p.abnormalType !== abnormalType) return false;
       if (status !== 'all' && p.status !== status) return false;
       if (assigneeStatus !== 'all' && p.assigneeStatus !== assigneeStatus) return false;
+      if (overdueFilter === 'overdue' && !isOverdue(p)) return false;
       if (searchKeyword && !p.name.includes(searchKeyword) && !p.phone.includes(searchKeyword)) return false;
       return true;
     });
-  }, [patients, abnormalType, status, assigneeStatus, searchKeyword]);
+  }, [patients, abnormalType, status, assigneeStatus, overdueFilter, searchKeyword, isOverdue]);
 
   const handleStatusChange = (id: string, newStatus: string) => {
     setPatients(prev => prev.map(p => 
@@ -62,10 +101,44 @@ const AbnormalPage = () => {
     ));
   };
 
-  const handleAssigneeStatusChange = (id: string, newAssigneeStatus: string) => {
-    setPatients(prev => prev.map(p => 
-      p.id === id ? { ...p, assigneeStatus: newAssigneeStatus as AbnormalPatient['assigneeStatus'] } : p
-    ));
+  const handleAdvanceStatus = (patient: AbnormalPatient, targetStatus: 'processing' | 'completed') => {
+    setFollowUpTarget(patient);
+    setFollowUpTargetStatus(targetStatus);
+    setFollowUpModalOpen(true);
+  };
+
+  const handleFollowUpConfirm = (note: string) => {
+    if (!followUpTarget || !followUpTargetStatus) return;
+
+    const newRecord: FollowUpRecord = {
+      id: generateId(),
+      patientId: followUpTarget.id,
+      fromStatus: followUpTarget.assigneeStatus,
+      toStatus: followUpTargetStatus,
+      operator: followUpTarget.assignee || '当前用户',
+      timestamp: nowStr(),
+      note: note || undefined,
+    };
+
+    setPatients(prev => prev.map(p => {
+      if (p.id === followUpTarget.id) {
+        return {
+          ...p,
+          assigneeStatus: followUpTargetStatus,
+          followUpRecords: [...(p.followUpRecords || []), newRecord],
+        };
+      }
+      return p;
+    }));
+
+    setFollowUpModalOpen(false);
+    setFollowUpTarget(null);
+    setFollowUpTargetStatus(null);
+  };
+
+  const handlePatientClick = (patient: AbnormalPatient) => {
+    setSelectedPatient(patient);
+    setDetailDrawerOpen(true);
   };
 
   const handleSelect = (id: string) => {
@@ -90,12 +163,24 @@ const AbnormalPage = () => {
   };
 
   const handleDispatchConfirm = (patientIds: string[], assignee: string) => {
+    const now = nowStr();
     setPatients(prev => prev.map(p => {
       if (patientIds.includes(p.id)) {
+        const newRecord: FollowUpRecord = {
+          id: generateId(),
+          patientId: p.id,
+          fromStatus: p.assigneeStatus,
+          toStatus: 'dispatched',
+          operator: '店长',
+          timestamp: now,
+          note: `分派给 ${assignee}`,
+        };
         return { 
           ...p, 
           assignee, 
-          assigneeStatus: 'dispatched' as AbnormalPatient['assigneeStatus'] 
+          assigneeStatus: 'dispatched' as AbnormalPatient['assigneeStatus'],
+          dispatchedAt: now,
+          followUpRecords: [...(p.followUpRecords || []), newRecord],
         };
       }
       return p;
@@ -113,12 +198,14 @@ const AbnormalPage = () => {
     const dispatchedCount = patients.filter(p => p.assigneeStatus === 'dispatched').length;
     const processingCount = patients.filter(p => p.assigneeStatus === 'processing').length;
     const completedCount = patients.filter(p => p.assigneeStatus === 'completed').length;
+    const followOverdueCount = patients.filter(isOverdue).length;
 
     return { 
       total, sutureCount, overdueCount, noShowCount, pendingCount, 
-      undispatchedCount, dispatchedCount, processingCount, completedCount 
+      undispatchedCount, dispatchedCount, processingCount, completedCount,
+      followOverdueCount
     };
-  }, [patients]);
+  }, [patients, isOverdue]);
 
   const assigneeStatusList: { value: AssigneeStatusType; label: string; count: number; icon: any; color: string; bg: string; border: string }[] = [
     { value: 'undispatched', label: '待分派', count: stats.undispatchedCount, icon: Inbox, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
@@ -137,6 +224,46 @@ const AbnormalPage = () => {
           </div>
           <ExportButton data={filteredPatients} />
         </div>
+
+        {stats.followOverdueCount > 0 && (
+          <div className="bg-gradient-to-r from-danger-50 to-warning-50 border border-danger-200 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-danger-100 flex items-center justify-center animate-pulse">
+                <AlertCircle className="w-5 h-5 text-danger-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-danger-800">
+                  {stats.followOverdueCount} 个任务跟进超时
+                </h4>
+                <p className="text-sm text-danger-600">
+                  分派超过 {OVERDUE_HOURS} 小时未进入跟进中，请及时催办
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setOverdueFilter(overdueFilter === 'overdue' ? 'all' : 'overdue')}
+                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  overdueFilter === 'overdue'
+                    ? 'bg-danger-600 text-white'
+                    : 'bg-white text-danger-700 border border-danger-200 hover:bg-danger-100'
+                }`}
+              >
+                {overdueFilter === 'overdue' ? (
+                  <span className="flex items-center gap-1.5">
+                    <X className="w-4 h-4" />
+                    取消筛选
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <AlertCircle className="w-4 h-4" />
+                    一键筛选超时任务
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-4 gap-5">
           <div className="stat-card">
@@ -255,12 +382,14 @@ const AbnormalPage = () => {
             <PatientTable 
               data={filteredPatients} 
               onStatusChange={handleStatusChange}
-              onAssigneeStatusChange={handleAssigneeStatusChange}
+              onAdvanceStatus={handleAdvanceStatus}
+              onPatientClick={handlePatientClick}
               selectedIds={selectedIds}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}
               onDispatch={handleDispatch}
               customerServices={customerServices}
+              isOverdue={isOverdue}
             />
           </div>
         </div>
@@ -272,6 +401,24 @@ const AbnormalPage = () => {
         patientIds={dispatchTargetIds}
         customerServices={customerServices}
         onDispatch={handleDispatchConfirm}
+      />
+
+      <PatientDetailDrawer
+        isOpen={detailDrawerOpen}
+        onClose={() => setDetailDrawerOpen(false)}
+        patient={selectedPatient}
+      />
+
+      <FollowUpModal
+        isOpen={followUpModalOpen}
+        onClose={() => {
+          setFollowUpModalOpen(false);
+          setFollowUpTarget(null);
+          setFollowUpTargetStatus(null);
+        }}
+        patient={followUpTarget}
+        targetStatus={followUpTargetStatus}
+        onConfirm={handleFollowUpConfirm}
       />
     </Layout>
   );

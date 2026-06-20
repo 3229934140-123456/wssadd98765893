@@ -1,15 +1,18 @@
-import { Phone, Clock, AlertTriangle, UserPlus, ArrowRight, CheckCircle2, ArrowUpRight } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, UserPlus, ArrowRight, CheckCircle2, ArrowUpRight, AlertCircle, Eye } from 'lucide-react';
 import type { AbnormalPatient } from '@/types';
 
 interface PatientTableProps {
   data: AbnormalPatient[];
   onStatusChange?: (id: string, status: string) => void;
   onAssigneeStatusChange?: (id: string, assigneeStatus: string) => void;
+  onAdvanceStatus?: (patient: AbnormalPatient, targetStatus: 'processing' | 'completed') => void;
+  onPatientClick?: (patient: AbnormalPatient) => void;
   selectedIds: string[];
   onSelect: (id: string) => void;
   onSelectAll: () => void;
   onDispatch: (ids: string[]) => void;
   customerServices: { id: string; name: string; clinicName: string }[];
+  isOverdue?: (patient: AbnormalPatient) => boolean;
 }
 
 const getAbnormalTypeLabel = (type: string) => {
@@ -68,7 +71,7 @@ const getAssigneeStatusClass = (status: string) => {
   }
 };
 
-const getNextAssigneeStatus = (current: string): { next: string | null; label: string } => {
+const getNextAssigneeStatus = (current: string): { next: 'processing' | 'completed' | null; label: string } => {
   switch (current) {
     case 'dispatched':
       return { next: 'processing', label: '标为跟进中' };
@@ -79,7 +82,7 @@ const getNextAssigneeStatus = (current: string): { next: string | null; label: s
   }
 };
 
-const PatientTable = ({ data, onStatusChange, onAssigneeStatusChange, selectedIds, onSelect, onSelectAll, onDispatch, customerServices }: PatientTableProps) => {
+const PatientTable = ({ data, onStatusChange, onAssigneeStatusChange, onAdvanceStatus, onPatientClick, selectedIds, onSelect, onSelectAll, onDispatch, customerServices, isOverdue }: PatientTableProps) => {
   const allSelected = data.length > 0 && data.every((p) => selectedIds.includes(p.id));
 
   return (
@@ -130,126 +133,143 @@ const PatientTable = ({ data, onStatusChange, onAssigneeStatusChange, selectedId
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {data.map((patient, index) => (
-              <tr
-                key={patient.id}
-                className="hover:bg-neutral-50/50 transition-colors"
-                style={{ animationDelay: `${index * 30}ms` }}
-              >
-                <td className="px-6 py-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.includes(patient.id)}
-                    onChange={() => onSelect(patient.id)}
-                    className="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
-                      <span className="text-sm font-medium text-neutral-600">
-                        {patient.name.charAt(0)}
+            {data.map((patient, index) => {
+              const overdue = isOverdue?.(patient);
+              return (
+                <tr
+                  key={patient.id}
+                  className={`hover:bg-neutral-50/50 transition-colors ${overdue ? 'bg-danger-50/30' : ''}`}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(patient.id)}
+                      onChange={() => onSelect(patient.id)}
+                      className="w-4 h-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center">
+                        <span className="text-sm font-medium text-neutral-600">
+                          {patient.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => onPatientClick?.(patient)}
+                            className="text-sm font-medium text-neutral-800 hover:text-teal-600 transition-colors flex items-center gap-1"
+                          >
+                            {patient.name}
+                            <Eye className="w-3 h-3 text-neutral-400" />
+                          </button>
+                          {overdue && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-danger-100 text-danger-600 text-[10px] font-medium">
+                              <AlertCircle className="w-3 h-3" />
+                              超时
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-500 flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {patient.phone}
+                        </p>
+                        {patient.source && (
+                          <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-medium">
+                            <ArrowUpRight className="w-3 h-3" />
+                            {patient.source.type === 'doctor' ? '医生' : '前台'} {patient.source.personName} · {patient.source.stageLabel}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-neutral-700">{patient.clinicName}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="tag-neutral">{patient.treatmentType}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`tag ${getAbnormalTypeClass(patient.abnormalType)}`}>
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      {getAbnormalTypeLabel(patient.abnormalType)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm text-neutral-600">{patient.abnormalDetail}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                      <span className={`text-sm font-mono ${
+                        patient.daysOverdue > 30 ? 'text-danger-600' :
+                        patient.daysOverdue > 14 ? 'text-warning-600' : 'text-neutral-600'
+                      }`}>
+                        {patient.daysOverdue} 天
                       </span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-800">{patient.name}</p>
-                      <p className="text-xs text-neutral-500 flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
-                        {patient.phone}
-                      </p>
-                      {patient.source && (
-                        <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-600 text-[10px] font-medium">
-                          <ArrowUpRight className="w-3 h-3" />
-                          {patient.source.type === 'doctor' ? '医生' : '前台'} {patient.source.personName} · {patient.source.stageLabel}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-neutral-700">{patient.clinicName}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="tag-neutral">{patient.treatmentType}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`tag ${getAbnormalTypeClass(patient.abnormalType)}`}>
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    {getAbnormalTypeLabel(patient.abnormalType)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="text-sm text-neutral-600">{patient.abnormalDetail}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                    <span className={`text-sm font-mono ${
-                      patient.daysOverdue > 30 ? 'text-danger-600' :
-                      patient.daysOverdue > 14 ? 'text-warning-600' : 'text-neutral-600'
-                    }`}>
-                      {patient.daysOverdue} 天
+                  </td>
+                  <td className="px-6 py-4">
+                    {patient.assignee ? (
+                      <span className="text-sm text-neutral-700">{patient.assignee}</span>
+                    ) : (
+                      <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">未分派</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${getAssigneeStatusClass(patient.assigneeStatus)}`}>
+                      {getAssigneeStatusLabel(patient.assigneeStatus)}
                     </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  {patient.assignee ? (
-                    <span className="text-sm text-neutral-700">{patient.assignee}</span>
-                  ) : (
-                    <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">未分派</span>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded ${getAssigneeStatusClass(patient.assigneeStatus)}`}>
-                    {getAssigneeStatusLabel(patient.assigneeStatus)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={getStatusClass(patient.status)}>
-                    {getStatusLabel(patient.status)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {(() => {
-                      const nextStatus = getNextAssigneeStatus(patient.assigneeStatus);
-                      if (nextStatus.next && onAssigneeStatusChange) {
-                        return (
-                          <button
-                            onClick={() => onAssigneeStatusChange(patient.id, nextStatus.next!)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors"
-                          >
-                            <ArrowRight className="w-3 h-3" />
-                            {nextStatus.label}
-                          </button>
-                        );
-                      }
-                      if (patient.assigneeStatus === 'completed') {
-                        return (
-                          <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-success-600 bg-success-50 rounded-md">
-                            <CheckCircle2 className="w-3 h-3" />
-                            已完成
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
-                    <button
-                      onClick={() => onStatusChange?.(patient.id, 'contacted')}
-                      className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
-                    >
-                      标记联系
-                    </button>
-                    <button
-                      onClick={() => onStatusChange?.(patient.id, 'recovered')}
-                      className="px-3 py-1.5 text-xs font-medium text-success-600 bg-success-50 rounded-md hover:bg-success-100 transition-colors"
-                    >
-                      已追回
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={getStatusClass(patient.status)}>
+                      {getStatusLabel(patient.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {(() => {
+                        const nextStatus = getNextAssigneeStatus(patient.assigneeStatus);
+                        if (nextStatus.next && onAdvanceStatus) {
+                          return (
+                            <button
+                              onClick={() => onAdvanceStatus(patient, nextStatus.next!)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors"
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                              {nextStatus.label}
+                            </button>
+                          );
+                        }
+                        if (patient.assigneeStatus === 'completed') {
+                          return (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-success-600 bg-success-50 rounded-md">
+                              <CheckCircle2 className="w-3 h-3" />
+                              已完成
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                      <button
+                        onClick={() => onStatusChange?.(patient.id, 'contacted')}
+                        className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
+                      >
+                        标记联系
+                      </button>
+                      <button
+                        onClick={() => onStatusChange?.(patient.id, 'recovered')}
+                        className="px-3 py-1.5 text-xs font-medium text-success-600 bg-success-50 rounded-md hover:bg-success-100 transition-colors"
+                      >
+                        已追回
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

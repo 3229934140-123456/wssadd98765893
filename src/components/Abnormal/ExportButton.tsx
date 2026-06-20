@@ -48,13 +48,28 @@ const ExportButton = ({ data }: ExportButtonProps) => {
     return labels[status] || status;
   };
 
+  const getLatestFollowUp = (patient: AbnormalPatient) => {
+    if (!patient.followUpRecords || patient.followUpRecords.length === 0) {
+      return { time: '-', operator: '-', note: '-' };
+    }
+    const latest = [...patient.followUpRecords].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+    return {
+      time: latest.timestamp,
+      operator: latest.operator,
+      note: latest.note || '-',
+    };
+  };
+
   const exportCSV = () => {
-    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态', '负责人', '分派状态', '来源'];
+    const headers = ['患者姓名', '联系电话', '所属门店', '治疗项目', '异常类型', '异常详情', '上次就诊日期', '超期天数', '爽约次数', '跟进状态', '负责人', '分派状态', '来源', '最近跟进时间', '最近跟进人', '最近跟进结果'];
     
     const rows = data.map(p => {
       const sourceLabel = p.source 
         ? `${p.source.type === 'doctor' ? '医生' : '前台'} ${p.source.personName} - ${p.source.stageLabel}`
         : '-';
+      const latest = getLatestFollowUp(p);
       return [
         p.name,
         p.phone,
@@ -69,6 +84,9 @@ const ExportButton = ({ data }: ExportButtonProps) => {
         p.assignee || '未分派',
         getAssigneeStatusLabel(p.assigneeStatus),
         sourceLabel,
+        latest.time,
+        latest.operator,
+        latest.note,
       ];
     });
 
@@ -91,23 +109,29 @@ const ExportButton = ({ data }: ExportButtonProps) => {
   };
 
   const exportJSON = () => {
-    const jsonData = data.map(p => ({
-      姓名: p.name,
-      电话: p.phone,
-      门店: p.clinicName,
-      治疗项目: p.treatmentType,
-      异常类型: getAbnormalTypeLabel(p.abnormalType),
-      详情: p.abnormalDetail,
-      上次就诊: p.lastVisitDate,
-      超期天数: p.daysOverdue,
-      爽约次数: p.noShowCount,
-      状态: getStatusLabel(p.status),
-      负责人: p.assignee || '未分派',
-      分派状态: getAssigneeStatusLabel(p.assigneeStatus),
-      来源: p.source 
-        ? `${p.source.type === 'doctor' ? '医生' : '前台'} ${p.source.personName} - ${p.source.stageLabel}`
-        : '-',
-    }));
+    const jsonData = data.map(p => {
+      const latest = getLatestFollowUp(p);
+      return {
+        姓名: p.name,
+        电话: p.phone,
+        门店: p.clinicName,
+        治疗项目: p.treatmentType,
+        异常类型: getAbnormalTypeLabel(p.abnormalType),
+        详情: p.abnormalDetail,
+        上次就诊: p.lastVisitDate,
+        超期天数: p.daysOverdue,
+        爽约次数: p.noShowCount,
+        状态: getStatusLabel(p.status),
+        负责人: p.assignee || '未分派',
+        分派状态: getAssigneeStatusLabel(p.assigneeStatus),
+        来源: p.source 
+          ? `${p.source.type === 'doctor' ? '医生' : '前台'} ${p.source.personName} - ${p.source.stageLabel}`
+          : '-',
+        最近跟进时间: latest.time,
+        最近跟进人: latest.operator,
+        最近跟进结果: latest.note,
+      };
+    });
 
     const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

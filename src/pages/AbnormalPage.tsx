@@ -38,6 +38,12 @@ const AbnormalPage = () => {
     ));
   };
 
+  const handleAssigneeStatusChange = (id: string, newAssigneeStatus: string) => {
+    setPatients(prev => prev.map(p => 
+      p.id === id ? { ...p, assigneeStatus: newAssigneeStatus as AbnormalPatient['assigneeStatus'] } : p
+    ));
+  };
+
   const handleSelect = (id: string) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -170,6 +176,7 @@ const AbnormalPage = () => {
             <PatientTable 
               data={filteredPatients} 
               onStatusChange={handleStatusChange}
+              onAssigneeStatusChange={handleAssigneeStatusChange}
               selectedIds={selectedIds}
               onSelect={handleSelect}
               onSelectAll={handleSelectAll}

@@ -4,7 +4,8 @@ import DoctorRankList from '@/components/Ranking/DoctorRankList';
 import ReceptionistRankList from '@/components/Ranking/ReceptionistRankList';
 import FunnelChart from '@/components/Ranking/FunnelChart';
 import AttributionView from '@/components/Ranking/AttributionView';
-import { doctors, receptionists } from '@/data/mockData';
+import DropoffPatientPanel from '@/components/Ranking/DropoffPatientPanel';
+import { doctors, receptionists, getDropoffPatients } from '@/data/mockData';
 import type { DoctorData, ReceptionistData } from '@/types';
 import { Users, PhoneCall, TrendingUp, Target } from 'lucide-react';
 
@@ -18,6 +19,8 @@ type AttributionTarget = {
 const RankingPage = () => {
   const [activeTab, setActiveTab] = useState<TabType>('both');
   const [attributionTarget, setAttributionTarget] = useState<AttributionTarget>(null);
+  const [dropoffStage, setDropoffStage] = useState<string | null>(null);
+  const [dropoffPanelOpen, setDropoffPanelOpen] = useState(false);
 
   const handleDoctorClick = (doctor: DoctorData) => {
     setAttributionTarget({
@@ -35,6 +38,11 @@ const RankingPage = () => {
     });
   };
 
+  const handleStageClick = (stage: string) => {
+    setDropoffStage(stage);
+    setDropoffPanelOpen(true);
+  };
+
   const getAttributionFunnel = () => {
     if (!attributionTarget) return null;
     if (attributionTarget.type === 'doctor') {
@@ -43,6 +51,11 @@ const RankingPage = () => {
     }
     const receptionist = receptionists.find(r => r.id === attributionTarget.personId);
     return receptionist?.funnel || null;
+  };
+
+  const getDropoffList = () => {
+    if (!attributionTarget || !dropoffStage) return [];
+    return getDropoffPatients(attributionTarget.type, attributionTarget.personId, dropoffStage);
   };
 
   return (
@@ -198,6 +211,18 @@ const RankingPage = () => {
           personName={attributionTarget.personName}
           funnel={getAttributionFunnel()!}
           onClose={() => setAttributionTarget(null)}
+          onStageClick={handleStageClick}
+        />
+      )}
+
+      {attributionTarget && dropoffStage && (
+        <DropoffPatientPanel
+          isOpen={dropoffPanelOpen}
+          onClose={() => setDropoffPanelOpen(false)}
+          personType={attributionTarget.type}
+          personName={attributionTarget.personName}
+          stage={dropoffStage}
+          patients={getDropoffList()}
         />
       )}
     </Layout>

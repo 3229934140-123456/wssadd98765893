@@ -4,13 +4,21 @@ import StatCard from '@/components/Overview/StatCard';
 import ProjectFilter from '@/components/Overview/ProjectFilter';
 import ClinicTable from '@/components/Overview/ClinicTable';
 import TrendChart from '@/components/Overview/TrendChart';
-import { getClinicsByTreatment, getTotalStats, clinicTreatmentBreakdown } from '@/data/mockData';
-import type { TreatmentType } from '@/types';
+import ClinicDetailDrawer from '@/components/Overview/ClinicDetailDrawer';
+import { getClinicsByTreatment, getTotalStats, clinicTreatmentBreakdown, getWeeklyTrendByClinic } from '@/data/mockData';
+import type { TreatmentType, ClinicData } from '@/types';
 
 const OverviewPage = () => {
   const [selectedType, setSelectedType] = useState<TreatmentType>('all');
+  const [selectedClinic, setSelectedClinic] = useState<ClinicData | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const clinicData = getClinicsByTreatment(selectedType);
   const totalStats = getTotalStats(clinicData);
+
+  const handleClinicClick = (clinic: ClinicData) => {
+    setSelectedClinic(clinic);
+    setDrawerOpen(true);
+  };
 
   return (
     <Layout title="复诊概览">
@@ -18,7 +26,7 @@ const OverviewPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-neutral-800">本周复诊数据</h2>
-            <p className="text-sm text-neutral-500 mt-1">实时监控各门店复诊执行质量</p>
+            <p className="text-sm text-neutral-500 mt-1">实时监控各门店复诊执行质量，点击门店图标查看近4周趋势</p>
           </div>
           <ProjectFilter selected={selectedType} onChange={setSelectedType} />
         </div>
@@ -60,7 +68,11 @@ const OverviewPage = () => {
 
         <div className="grid grid-cols-3 gap-6">
           <div className="col-span-2">
-            <ClinicTable data={clinicData} breakdownData={clinicTreatmentBreakdown} />
+            <ClinicTable 
+              data={clinicData} 
+              breakdownData={clinicTreatmentBreakdown} 
+              onClinicClick={handleClinicClick}
+            />
           </div>
           <div className="col-span-1">
             <TrendChart />
@@ -97,6 +109,13 @@ const OverviewPage = () => {
           </div>
         </div>
       </div>
+
+      <ClinicDetailDrawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        clinic={selectedClinic}
+        weeklyTrendData={selectedClinic ? getWeeklyTrendByClinic(selectedClinic.id) : []}
+      />
     </Layout>
   );
 };

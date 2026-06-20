@@ -1,4 +1,4 @@
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronRight, ChevronDown, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import type { ClinicData, ClinicTreatmentBreakdown } from '@/types';
 
@@ -8,9 +8,10 @@ type SortOrder = 'asc' | 'desc';
 interface ClinicTableProps {
   data: ClinicData[];
   breakdownData: ClinicTreatmentBreakdown[];
+  onClinicClick?: (clinic: ClinicData) => void;
 }
 
-const ClinicTable = ({ data, breakdownData }: ClinicTableProps) => {
+const ClinicTable = ({ data, breakdownData, onClinicClick }: ClinicTableProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('noShowRate');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -156,6 +157,16 @@ const ClinicTable = ({ data, breakdownData }: ClinicTableProps) => {
                           {clinic.name.slice(0, 2)}
                         </div>
                         <span className="text-sm font-medium text-neutral-800">{clinic.name}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onClinicClick?.(clinic);
+                          }}
+                          className="ml-auto w-7 h-7 rounded-lg bg-neutral-100 hover:bg-primary-100 text-neutral-500 hover:text-primary-600 flex items-center justify-center transition-all group"
+                          title="查看近4周趋势"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                        </button>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">

@@ -1,57 +1,78 @@
-import type { ClinicData, DoctorData, ReceptionistData, AbnormalPatient, TrendData, TreatmentType, CustomerService, ClinicTreatmentBreakdown } from '@/types';
+import type { ClinicData, DoctorData, ReceptionistData, AbnormalPatient, TrendData, TreatmentType, CustomerService, ClinicTreatmentBreakdown, ClinicWeeklyTrend, DropoffPatient } from '@/types';
+
+const validateBreakdown = (breakdown: ClinicTreatmentBreakdown): ClinicTreatmentBreakdown => {
+  const total = breakdown.arrivals + breakdown.noShows + breakdown.reschedules;
+  if (total !== breakdown.appointments) {
+    const diff = breakdown.appointments - total;
+    breakdown.arrivals = Math.max(0, breakdown.arrivals + diff);
+  }
+  breakdown.noShowRate = +((breakdown.noShows / breakdown.appointments) * 100).toFixed(1);
+  breakdown.rescheduleRate = +((breakdown.reschedules / breakdown.appointments) * 100).toFixed(1);
+  breakdown.arrivalRate = +((breakdown.arrivals / breakdown.appointments) * 100).toFixed(1);
+  return breakdown;
+};
+
+const calculateRates = (c: ClinicData): ClinicData => {
+  return {
+    ...c,
+    noShowRate: +((c.noShows / c.appointments) * 100).toFixed(1),
+    rescheduleRate: +((c.reschedules / c.appointments) * 100).toFixed(1),
+    arrivalRate: +((c.arrivals / c.appointments) * 100).toFixed(1),
+  };
+};
 
 export const clinics: ClinicData[] = [
-  { id: '1', name: '北京朝阳店', appointments: 186, arrivals: 158, noShows: 18, reschedules: 10, noShowRate: 9.7, rescheduleRate: 5.4, arrivalRate: 84.9 },
-  { id: '2', name: '北京海淀店', appointments: 203, arrivals: 175, noShows: 20, reschedules: 8, noShowRate: 9.9, rescheduleRate: 3.9, arrivalRate: 86.2 },
-  { id: '3', name: '上海浦东店', appointments: 245, arrivals: 218, noShows: 15, reschedules: 12, noShowRate: 6.1, rescheduleRate: 4.9, arrivalRate: 89.0 },
-  { id: '4', name: '上海徐汇店', appointments: 178, arrivals: 149, noShows: 21, reschedules: 8, noShowRate: 11.8, rescheduleRate: 4.5, arrivalRate: 83.7 },
-  { id: '5', name: '广州天河店', appointments: 192, arrivals: 165, noShows: 17, reschedules: 10, noShowRate: 8.9, rescheduleRate: 5.2, arrivalRate: 85.9 },
-  { id: '6', name: '深圳南山店', appointments: 215, arrivals: 189, noShows: 16, reschedules: 10, noShowRate: 7.4, rescheduleRate: 4.7, arrivalRate: 87.9 },
-  { id: '7', name: '杭州西湖店', appointments: 156, arrivals: 134, noShows: 14, reschedules: 8, noShowRate: 9.0, rescheduleRate: 5.1, arrivalRate: 85.9 },
-  { id: '8', name: '成都锦江店', appointments: 168, arrivals: 142, noShows: 19, reschedules: 7, noShowRate: 11.3, rescheduleRate: 4.2, arrivalRate: 84.5 },
+  calculateRates({ id: '1', name: '北京朝阳店', appointments: 186, arrivals: 158, noShows: 18, reschedules: 10, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '2', name: '北京海淀店', appointments: 203, arrivals: 175, noShows: 20, reschedules: 8, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '3', name: '上海浦东店', appointments: 245, arrivals: 218, noShows: 15, reschedules: 12, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '4', name: '上海徐汇店', appointments: 178, arrivals: 149, noShows: 21, reschedules: 8, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '5', name: '广州天河店', appointments: 192, arrivals: 165, noShows: 17, reschedules: 10, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '6', name: '深圳南山店', appointments: 215, arrivals: 189, noShows: 16, reschedules: 10, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '7', name: '杭州西湖店', appointments: 156, arrivals: 134, noShows: 14, reschedules: 8, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  calculateRates({ id: '8', name: '成都锦江店', appointments: 168, arrivals: 142, noShows: 19, reschedules: 7, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
 ];
 
 export const clinicTreatmentBreakdown: ClinicTreatmentBreakdown[] = [
-  { clinicId: '1', clinicName: '北京朝阳店', treatment: '正畸', appointments: 68, arrivals: 55, noShows: 8, reschedules: 5, noShowRate: 11.8, rescheduleRate: 7.4, arrivalRate: 80.9 },
-  { clinicId: '1', clinicName: '北京朝阳店', treatment: '种植', appointments: 42, arrivals: 36, noShows: 3, reschedules: 3, noShowRate: 7.1, rescheduleRate: 7.1, arrivalRate: 85.7 },
-  { clinicId: '1', clinicName: '北京朝阳店', treatment: '牙周', appointments: 35, arrivals: 31, noShows: 3, reschedules: 1, noShowRate: 8.6, rescheduleRate: 2.9, arrivalRate: 88.6 },
-  { clinicId: '1', clinicName: '北京朝阳店', treatment: '儿牙', appointments: 28, arrivals: 22, noShows: 3, reschedules: 1, noShowRate: 10.7, rescheduleRate: 3.6, arrivalRate: 78.6 },
-  { clinicId: '1', clinicName: '北京朝阳店', treatment: '综合', appointments: 13, arrivals: 14, noShows: 1, reschedules: 0, noShowRate: 7.7, rescheduleRate: 0.0, arrivalRate: 92.3 },
-  { clinicId: '2', clinicName: '北京海淀店', treatment: '正畸', appointments: 75, arrivals: 63, noShows: 8, reschedules: 4, noShowRate: 10.7, rescheduleRate: 5.3, arrivalRate: 84.0 },
-  { clinicId: '2', clinicName: '北京海淀店', treatment: '种植', appointments: 48, arrivals: 42, noShows: 4, reschedules: 2, noShowRate: 8.3, rescheduleRate: 4.2, arrivalRate: 87.5 },
-  { clinicId: '2', clinicName: '北京海淀店', treatment: '牙周', appointments: 38, arrivals: 34, noShows: 3, reschedules: 1, noShowRate: 7.9, rescheduleRate: 2.6, arrivalRate: 89.5 },
-  { clinicId: '2', clinicName: '北京海淀店', treatment: '儿牙', appointments: 24, arrivals: 20, noShows: 3, reschedules: 1, noShowRate: 12.5, rescheduleRate: 4.2, arrivalRate: 83.3 },
-  { clinicId: '2', clinicName: '北京海淀店', treatment: '综合', appointments: 18, arrivals: 16, noShows: 2, reschedules: 0, noShowRate: 11.1, rescheduleRate: 0.0, arrivalRate: 88.9 },
-  { clinicId: '3', clinicName: '上海浦东店', treatment: '正畸', appointments: 88, arrivals: 80, noShows: 4, reschedules: 4, noShowRate: 4.5, rescheduleRate: 4.5, arrivalRate: 90.9 },
-  { clinicId: '3', clinicName: '上海浦东店', treatment: '种植', appointments: 62, arrivals: 56, noShows: 3, reschedules: 3, noShowRate: 4.8, rescheduleRate: 4.8, arrivalRate: 90.3 },
-  { clinicId: '3', clinicName: '上海浦东店', treatment: '牙周', appointments: 42, arrivals: 38, noShows: 2, reschedules: 2, noShowRate: 4.8, rescheduleRate: 4.8, arrivalRate: 90.5 },
-  { clinicId: '3', clinicName: '上海浦东店', treatment: '儿牙', appointments: 30, arrivals: 26, noShows: 3, reschedules: 1, noShowRate: 10.0, rescheduleRate: 3.3, arrivalRate: 86.7 },
-  { clinicId: '3', clinicName: '上海浦东店', treatment: '综合', appointments: 23, arrivals: 18, noShows: 3, reschedules: 2, noShowRate: 13.0, rescheduleRate: 8.7, arrivalRate: 78.3 },
-  { clinicId: '4', clinicName: '上海徐汇店', treatment: '正畸', appointments: 62, arrivals: 48, noShows: 9, reschedules: 5, noShowRate: 14.5, rescheduleRate: 8.1, arrivalRate: 77.4 },
-  { clinicId: '4', clinicName: '上海徐汇店', treatment: '种植', appointments: 40, arrivals: 35, noShows: 3, reschedules: 2, noShowRate: 7.5, rescheduleRate: 5.0, arrivalRate: 87.5 },
-  { clinicId: '4', clinicName: '上海徐汇店', treatment: '牙周', appointments: 35, arrivals: 30, noShows: 3, reschedules: 1, noShowRate: 8.6, rescheduleRate: 2.9, arrivalRate: 85.7 },
-  { clinicId: '4', clinicName: '上海徐汇店', treatment: '儿牙', appointments: 22, arrivals: 18, noShows: 3, reschedules: 0, noShowRate: 13.6, rescheduleRate: 0.0, arrivalRate: 81.8 },
-  { clinicId: '4', clinicName: '上海徐汇店', treatment: '综合', appointments: 19, arrivals: 18, noShows: 3, reschedules: 0, noShowRate: 15.8, rescheduleRate: 0.0, arrivalRate: 84.2 },
-  { clinicId: '5', clinicName: '广州天河店', treatment: '正畸', appointments: 68, arrivals: 57, noShows: 7, reschedules: 4, noShowRate: 10.3, rescheduleRate: 5.9, arrivalRate: 83.8 },
-  { clinicId: '5', clinicName: '广州天河店', treatment: '种植', appointments: 45, arrivals: 40, noShows: 3, reschedules: 2, noShowRate: 6.7, rescheduleRate: 4.4, arrivalRate: 88.9 },
-  { clinicId: '5', clinicName: '广州天河店', treatment: '牙周', appointments: 38, arrivals: 34, noShows: 3, reschedules: 1, noShowRate: 7.9, rescheduleRate: 2.6, arrivalRate: 89.5 },
-  { clinicId: '5', clinicName: '广州天河店', treatment: '儿牙', appointments: 24, arrivals: 20, noShows: 3, reschedules: 1, noShowRate: 12.5, rescheduleRate: 4.2, arrivalRate: 83.3 },
-  { clinicId: '5', clinicName: '广州天河店', treatment: '综合', appointments: 17, arrivals: 14, noShows: 1, reschedules: 2, noShowRate: 5.9, rescheduleRate: 11.8, arrivalRate: 82.4 },
-  { clinicId: '6', clinicName: '深圳南山店', treatment: '正畸', appointments: 78, arrivals: 69, noShows: 5, reschedules: 4, noShowRate: 6.4, rescheduleRate: 5.1, arrivalRate: 88.5 },
-  { clinicId: '6', clinicName: '深圳南山店', treatment: '种植', appointments: 52, arrivals: 46, noShows: 4, reschedules: 2, noShowRate: 7.7, rescheduleRate: 3.8, arrivalRate: 88.5 },
-  { clinicId: '6', clinicName: '深圳南山店', treatment: '牙周', appointments: 38, arrivals: 35, noShows: 2, reschedules: 1, noShowRate: 5.3, rescheduleRate: 2.6, arrivalRate: 92.1 },
-  { clinicId: '6', clinicName: '深圳南山店', treatment: '儿牙', appointments: 27, arrivals: 23, noShows: 3, reschedules: 1, noShowRate: 11.1, rescheduleRate: 3.7, arrivalRate: 85.2 },
-  { clinicId: '6', clinicName: '深圳南山店', treatment: '综合', appointments: 20, arrivals: 16, noShows: 2, reschedules: 2, noShowRate: 10.0, rescheduleRate: 10.0, arrivalRate: 80.0 },
-  { clinicId: '7', clinicName: '杭州西湖店', treatment: '正畸', appointments: 52, arrivals: 43, noShows: 5, reschedules: 4, noShowRate: 9.6, rescheduleRate: 7.7, arrivalRate: 82.7 },
-  { clinicId: '7', clinicName: '杭州西湖店', treatment: '种植', appointments: 35, arrivals: 30, noShows: 3, reschedules: 2, noShowRate: 8.6, rescheduleRate: 5.7, arrivalRate: 85.7 },
-  { clinicId: '7', clinicName: '杭州西湖店', treatment: '牙周', appointments: 32, arrivals: 29, noShows: 2, reschedules: 1, noShowRate: 6.3, rescheduleRate: 3.1, arrivalRate: 90.6 },
-  { clinicId: '7', clinicName: '杭州西湖店', treatment: '儿牙', appointments: 20, arrivals: 16, noShows: 3, reschedules: 1, noShowRate: 15.0, rescheduleRate: 5.0, arrivalRate: 80.0 },
-  { clinicId: '7', clinicName: '杭州西湖店', treatment: '综合', appointments: 17, arrivals: 16, noShows: 1, reschedules: 0, noShowRate: 5.9, rescheduleRate: 0.0, arrivalRate: 94.1 },
-  { clinicId: '8', clinicName: '成都锦江店', treatment: '正畸', appointments: 55, arrivals: 44, noShows: 7, reschedules: 4, noShowRate: 12.7, rescheduleRate: 7.3, arrivalRate: 80.0 },
-  { clinicId: '8', clinicName: '成都锦江店', treatment: '种植', appointments: 38, arrivals: 32, noShows: 4, reschedules: 1, noShowRate: 10.5, rescheduleRate: 2.6, arrivalRate: 84.2 },
-  { clinicId: '8', clinicName: '成都锦江店', treatment: '牙周', appointments: 32, arrivals: 28, noShows: 3, reschedules: 1, noShowRate: 9.4, rescheduleRate: 3.1, arrivalRate: 87.5 },
-  { clinicId: '8', clinicName: '成都锦江店', treatment: '儿牙', appointments: 23, arrivals: 20, noShows: 2, reschedules: 1, noShowRate: 8.7, rescheduleRate: 4.3, arrivalRate: 87.0 },
-  { clinicId: '8', clinicName: '成都锦江店', treatment: '综合', appointments: 20, arrivals: 18, noShows: 3, reschedules: 0, noShowRate: 15.0, rescheduleRate: 0.0, arrivalRate: 85.0 },
+  validateBreakdown({ clinicId: '1', clinicName: '北京朝阳店', treatment: '正畸', appointments: 68, arrivals: 55, noShows: 8, reschedules: 5, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '1', clinicName: '北京朝阳店', treatment: '种植', appointments: 42, arrivals: 36, noShows: 3, reschedules: 3, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '1', clinicName: '北京朝阳店', treatment: '牙周', appointments: 35, arrivals: 31, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '1', clinicName: '北京朝阳店', treatment: '儿牙', appointments: 28, arrivals: 22, noShows: 3, reschedules: 3, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '1', clinicName: '北京朝阳店', treatment: '综合', appointments: 13, arrivals: 14, noShows: 1, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '2', clinicName: '北京海淀店', treatment: '正畸', appointments: 75, arrivals: 63, noShows: 8, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '2', clinicName: '北京海淀店', treatment: '种植', appointments: 48, arrivals: 42, noShows: 4, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '2', clinicName: '北京海淀店', treatment: '牙周', appointments: 38, arrivals: 34, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '2', clinicName: '北京海淀店', treatment: '儿牙', appointments: 24, arrivals: 20, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '2', clinicName: '北京海淀店', treatment: '综合', appointments: 18, arrivals: 16, noShows: 2, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '3', clinicName: '上海浦东店', treatment: '正畸', appointments: 88, arrivals: 80, noShows: 4, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '3', clinicName: '上海浦东店', treatment: '种植', appointments: 62, arrivals: 56, noShows: 3, reschedules: 3, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '3', clinicName: '上海浦东店', treatment: '牙周', appointments: 42, arrivals: 38, noShows: 2, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '3', clinicName: '上海浦东店', treatment: '儿牙', appointments: 30, arrivals: 26, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '3', clinicName: '上海浦东店', treatment: '综合', appointments: 23, arrivals: 18, noShows: 3, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '4', clinicName: '上海徐汇店', treatment: '正畸', appointments: 62, arrivals: 48, noShows: 9, reschedules: 5, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '4', clinicName: '上海徐汇店', treatment: '种植', appointments: 40, arrivals: 35, noShows: 3, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '4', clinicName: '上海徐汇店', treatment: '牙周', appointments: 35, arrivals: 30, noShows: 3, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '4', clinicName: '上海徐汇店', treatment: '儿牙', appointments: 22, arrivals: 18, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '4', clinicName: '上海徐汇店', treatment: '综合', appointments: 19, arrivals: 18, noShows: 1, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '5', clinicName: '广州天河店', treatment: '正畸', appointments: 68, arrivals: 57, noShows: 7, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '5', clinicName: '广州天河店', treatment: '种植', appointments: 45, arrivals: 40, noShows: 3, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '5', clinicName: '广州天河店', treatment: '牙周', appointments: 38, arrivals: 34, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '5', clinicName: '广州天河店', treatment: '儿牙', appointments: 24, arrivals: 20, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '5', clinicName: '广州天河店', treatment: '综合', appointments: 17, arrivals: 14, noShows: 1, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '6', clinicName: '深圳南山店', treatment: '正畸', appointments: 78, arrivals: 69, noShows: 5, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '6', clinicName: '深圳南山店', treatment: '种植', appointments: 52, arrivals: 46, noShows: 4, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '6', clinicName: '深圳南山店', treatment: '牙周', appointments: 38, arrivals: 35, noShows: 2, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '6', clinicName: '深圳南山店', treatment: '儿牙', appointments: 27, arrivals: 23, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '6', clinicName: '深圳南山店', treatment: '综合', appointments: 20, arrivals: 16, noShows: 2, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '7', clinicName: '杭州西湖店', treatment: '正畸', appointments: 52, arrivals: 43, noShows: 5, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '7', clinicName: '杭州西湖店', treatment: '种植', appointments: 35, arrivals: 30, noShows: 3, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '7', clinicName: '杭州西湖店', treatment: '牙周', appointments: 32, arrivals: 29, noShows: 2, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '7', clinicName: '杭州西湖店', treatment: '儿牙', appointments: 20, arrivals: 16, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '7', clinicName: '杭州西湖店', treatment: '综合', appointments: 17, arrivals: 16, noShows: 1, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '8', clinicName: '成都锦江店', treatment: '正畸', appointments: 55, arrivals: 44, noShows: 7, reschedules: 4, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '8', clinicName: '成都锦江店', treatment: '种植', appointments: 38, arrivals: 32, noShows: 4, reschedules: 2, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '8', clinicName: '成都锦江店', treatment: '牙周', appointments: 32, arrivals: 28, noShows: 3, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '8', clinicName: '成都锦江店', treatment: '儿牙', appointments: 23, arrivals: 20, noShows: 2, reschedules: 1, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
+  validateBreakdown({ clinicId: '8', clinicName: '成都锦江店', treatment: '综合', appointments: 20, arrivals: 18, noShows: 2, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 }),
 ];
 
 export const doctors: DoctorData[] = [
@@ -114,46 +135,6 @@ export const trendData: TrendData[] = [
   { week: '第4周', appointments: 215, arrivals: 186, noShows: 18, reschedules: 11, noShowRate: 8.4 },
 ];
 
-export const getClinicsByTreatment = (type: TreatmentType): ClinicData[] => {
-  const multipliers: Record<TreatmentType, number[]> = {
-    all: [1, 1, 1, 1, 1, 1, 1, 1],
-    orthodontics: [0.85, 0.92, 0.95, 0.78, 0.88, 0.9, 0.82, 0.75],
-    implant: [0.7, 0.65, 0.82, 0.6, 0.72, 0.78, 0.68, 0.58],
-    periodontal: [0.9, 0.88, 0.92, 0.85, 0.87, 0.91, 0.84, 0.8],
-    pediatric: [0.75, 0.8, 0.88, 0.7, 0.78, 0.82, 0.72, 0.65],
-    general: [0.95, 0.93, 0.97, 0.9, 0.94, 0.96, 0.89, 0.86],
-  };
-
-  const rates: Record<TreatmentType, { noShow: number; reschedule: number }> = {
-    all: { noShow: 1, reschedule: 1 },
-    orthodontics: { noShow: 1.15, reschedule: 1.2 },
-    implant: { noShow: 1.3, reschedule: 1.4 },
-    periodontal: { noShow: 0.85, reschedule: 0.9 },
-    pediatric: { noShow: 1.4, reschedule: 1.3 },
-    general: { noShow: 0.75, reschedule: 0.7 },
-  };
-
-  const mult = multipliers[type];
-  const rateMult = rates[type];
-
-  return clinics.map((c, i) => {
-    const appointments = Math.round(c.appointments * mult[i]);
-    const noShows = Math.round(appointments * (c.noShowRate / 100) * rateMult.noShow);
-    const reschedules = Math.round(appointments * (c.rescheduleRate / 100) * rateMult.reschedule);
-    const arrivals = appointments - noShows - reschedules;
-    return {
-      ...c,
-      appointments,
-      arrivals,
-      noShows,
-      reschedules,
-      noShowRate: +((noShows / appointments) * 100).toFixed(1),
-      rescheduleRate: +((reschedules / appointments) * 100).toFixed(1),
-      arrivalRate: +((arrivals / appointments) * 100).toFixed(1),
-    };
-  });
-};
-
 export const getTreatmentBreakdownByClinic = (clinicId: string): ClinicTreatmentBreakdown[] => {
   return clinicTreatmentBreakdown.filter(b => b.clinicId === clinicId);
 };
@@ -178,3 +159,154 @@ export const funnelData = [
   { name: '前台提醒', value: 798, rate: 94.2 },
   { name: '实际到诊', value: 712, rate: 89.2 },
 ];
+
+const weekLabels = ['第1周 (5.26-6.1)', '第2周 (6.2-6.8)', '第3周 (6.9-6.15)', '第4周 (6.16-6.22)'];
+const weekKeys = ['week1', 'week2', 'week3', 'week4'];
+
+const generateWeeklyTrendForClinic = (clinicId: string, clinicName: string): ClinicWeeklyTrend[] => {
+  const treatments = ['正畸', '种植', '牙周', '儿牙', '综合'];
+  const baseVolumes: Record<string, number[]> = {
+    '1': [68, 42, 35, 28, 13],
+    '2': [75, 48, 38, 24, 18],
+    '3': [88, 62, 42, 30, 23],
+    '4': [62, 40, 35, 22, 19],
+    '5': [68, 45, 38, 24, 17],
+    '6': [78, 52, 38, 27, 20],
+    '7': [52, 35, 32, 20, 17],
+    '8': [55, 38, 32, 23, 20],
+  };
+  
+  const weekMultipliers = [0.85, 0.92, 0.98, 1.0];
+  const clinicBase = baseVolumes[clinicId] || [50, 30, 25, 20, 15];
+  const trends: ClinicWeeklyTrend[] = [];
+
+  treatments.forEach((treatment, ti) => {
+    weekKeys.forEach((week, wi) => {
+      const baseAppt = Math.round(clinicBase[ti] * weekMultipliers[wi]);
+      let noShowRate = 9 + (ti === 3 ? 3 : 0) + (wi === 3 ? 2 : 0);
+      let rescheduleRate = 5;
+      
+      if (clinicId === '4' && treatment === '正畸' && wi >= 2) noShowRate += 5;
+      if (clinicId === '8' && treatment === '种植' && wi >= 1) noShowRate += 3;
+      
+      const noShows = Math.round(baseAppt * (noShowRate / 100));
+      const reschedules = Math.round(baseAppt * (rescheduleRate / 100));
+      const arrivals = baseAppt - noShows - reschedules;
+      
+      trends.push({
+        clinicId,
+        clinicName,
+        treatment,
+        week: weekKeys[wi],
+        weekLabel: weekLabels[wi],
+        appointments: baseAppt,
+        arrivals,
+        noShows,
+        reschedules,
+        noShowRate: +(noShowRate).toFixed(1),
+        rescheduleRate: +(rescheduleRate).toFixed(1),
+        arrivalRate: +((arrivals / baseAppt) * 100).toFixed(1),
+      });
+    });
+  });
+  
+  return trends;
+};
+
+export const clinicWeeklyTrends: ClinicWeeklyTrend[] = [
+  ...generateWeeklyTrendForClinic('1', '北京朝阳店'),
+  ...generateWeeklyTrendForClinic('2', '北京海淀店'),
+  ...generateWeeklyTrendForClinic('3', '上海浦东店'),
+  ...generateWeeklyTrendForClinic('4', '上海徐汇店'),
+  ...generateWeeklyTrendForClinic('5', '广州天河店'),
+  ...generateWeeklyTrendForClinic('6', '深圳南山店'),
+  ...generateWeeklyTrendForClinic('7', '杭州西湖店'),
+  ...generateWeeklyTrendForClinic('8', '成都锦江店'),
+];
+
+export const dropoffPatients: DropoffPatient[] = [
+  { id: 'dp1', name: '马先生', phone: '139****1111', clinicName: '北京朝阳店', treatmentType: '正畸', lastAppointmentDate: '2024-06-15', suggestionDate: '2024-06-10', dropoffStage: 'suggestion_to_appointment', suggestedAction: '电话联系确认预约意向', doctorId: 'd1' },
+  { id: 'dp2', name: '杨女士', phone: '138****2222', clinicName: '北京朝阳店', treatmentType: '种植', lastAppointmentDate: '2024-06-18', suggestionDate: '2024-06-12', dropoffStage: 'suggestion_to_appointment', suggestedAction: '发送优惠信息促动预约', doctorId: 'd1' },
+  { id: 'dp3', name: '朱小朋友', phone: '137****3333', clinicName: '北京朝阳店', treatmentType: '儿牙', lastAppointmentDate: '2024-06-10', suggestionDate: '2024-06-05', dropoffStage: 'appointment_to_reminder', suggestedAction: '前台补发短信提醒', doctorId: 'd10' },
+  { id: 'dp4', name: '胡先生', phone: '136****4444', clinicName: '北京朝阳店', treatmentType: '牙周', lastAppointmentDate: '2024-06-12', suggestionDate: '2024-06-08', dropoffStage: 'appointment_to_reminder', suggestedAction: '确认是否已收到提醒', doctorId: 'd1' },
+  { id: 'dp5', name: '郭女士', phone: '135****5555', clinicName: '北京朝阳店', treatmentType: '正畸', lastAppointmentDate: '2024-06-20', suggestionDate: '2024-06-15', dropoffStage: 'reminder_to_arrival', suggestedAction: '询问爽约原因重新预约', doctorId: 'd1' },
+  { id: 'dp6', name: '何先生', phone: '134****6666', clinicName: '上海浦东店', treatmentType: '种植', lastAppointmentDate: '2024-06-19', suggestionDate: '2024-06-14', dropoffStage: 'suggestion_to_appointment', suggestedAction: '医生助理亲自跟进', doctorId: 'd2' },
+  { id: 'dp7', name: '高女士', phone: '133****7777', clinicName: '上海浦东店', treatmentType: '正畸', lastAppointmentDate: '2024-06-11', suggestionDate: '2024-06-06', dropoffStage: 'suggestion_to_appointment', suggestedAction: '了解时间冲突原因', doctorId: 'd2' },
+  { id: 'dp8', name: '林先生', phone: '132****8888', clinicName: '上海浦东店', treatmentType: '牙周', lastAppointmentDate: '2024-06-13', suggestionDate: '2024-06-09', dropoffStage: 'reminder_to_arrival', suggestedAction: '发送交通路线指南', doctorId: 'd9' },
+  { id: 'dp9', name: '罗女士', phone: '131****9999', clinicName: '北京海淀店', treatmentType: '正畸', lastAppointmentDate: '2024-06-17', suggestionDate: '2024-06-11', dropoffStage: 'appointment_to_reminder', suggestedAction: '检查提醒系统是否漏发', doctorId: 'd3' },
+  { id: 'dp10', name: '梁先生', phone: '130****1010', clinicName: '北京海淀店', treatmentType: '种植', lastAppointmentDate: '2024-06-14', suggestionDate: '2024-06-09', dropoffStage: 'suggestion_to_appointment', suggestedAction: '提供分期方案降低门槛', doctorId: 'd3' },
+  { id: 'dp11', name: '宋女士', phone: '188****1212', clinicName: '上海徐汇店', treatmentType: '儿牙', lastAppointmentDate: '2024-06-16', suggestionDate: '2024-06-10', dropoffStage: 'reminder_to_arrival', suggestedAction: '家长沟通强调复诊重要性', doctorId: 'd4' },
+  { id: 'dp12', name: '唐先生', phone: '187****3434', clinicName: '上海徐汇店', treatmentType: '正畸', lastAppointmentDate: '2024-06-18', suggestionDate: '2024-06-13', dropoffStage: 'suggestion_to_appointment', suggestedAction: '弹性安排周末时段', doctorId: 'd4' },
+  { id: 'dp13', name: '韩女士', phone: '186****5656', clinicName: '深圳南山店', treatmentType: '种植', lastAppointmentDate: '2024-06-20', suggestionDate: '2024-06-15', dropoffStage: 'appointment_to_reminder', suggestedAction: '人工电话确认', doctorId: 'd5' },
+  { id: 'dp14', name: '冯先生', phone: '185****7878', clinicName: '广州天河店', treatmentType: '牙周', lastAppointmentDate: '2024-06-12', suggestionDate: '2024-06-07', dropoffStage: 'suggestion_to_appointment', suggestedAction: '发送牙龈健康科普', doctorId: 'd6' },
+  { id: 'dp15', name: '董女士', phone: '184****9090', clinicName: '杭州西湖店', treatmentType: '综合', lastAppointmentDate: '2024-06-14', suggestionDate: '2024-06-09', dropoffStage: 'reminder_to_arrival', suggestedAction: '了解改约意向', doctorId: 'd7' },
+  { id: 'dp16', name: '萧先生', phone: '183****2323', clinicName: '成都锦江店', treatmentType: '正畸', lastAppointmentDate: '2024-06-19', suggestionDate: '2024-06-14', dropoffStage: 'suggestion_to_appointment', suggestedAction: '了解矫正顾虑', doctorId: 'd8' },
+  { id: 'dp17', name: '程女士', phone: '182****4545', clinicName: '上海浦东店', treatmentType: '种植', lastAppointmentDate: '2024-06-10', suggestionDate: '2024-06-05', dropoffStage: 'assigned_to_reminded', suggestedAction: '核实名单分配是否到位', receptionistId: 'r1' },
+  { id: 'dp18', name: '曹先生', phone: '181****6767', clinicName: '上海浦东店', treatmentType: '正畸', lastAppointmentDate: '2024-06-15', suggestionDate: '2024-06-10', dropoffStage: 'assigned_to_reminded', suggestedAction: '优先安排电话提醒', receptionistId: 'r1' },
+  { id: 'dp19', name: '袁女士', phone: '180****8989', clinicName: '上海浦东店', treatmentType: '儿牙', lastAppointmentDate: '2024-06-18', suggestionDate: '2024-06-13', dropoffStage: 'reminded_to_responded', suggestedAction: '更换联系方式重试', receptionistId: 'r1' },
+  { id: 'dp20', name: '邓先生', phone: '179****1122', clinicName: '深圳南山店', treatmentType: '牙周', lastAppointmentDate: '2024-06-11', suggestionDate: '2024-06-06', dropoffStage: 'responded_to_arrived', suggestedAction: '送上复诊小礼品激励', receptionistId: 'r2' },
+  { id: 'dp21', name: '许女士', phone: '178****3344', clinicName: '北京朝阳店', treatmentType: '正畸', lastAppointmentDate: '2024-06-20', suggestionDate: '2024-06-15', dropoffStage: 'reminded_to_responded', suggestedAction: '短信+电话双通道提醒', receptionistId: 'r3' },
+  { id: 'dp22', name: '傅先生', phone: '177****5566', clinicName: '北京海淀店', treatmentType: '种植', lastAppointmentDate: '2024-06-17', suggestionDate: '2024-06-12', dropoffStage: 'assigned_to_reminded', suggestedAction: '检查提醒排班', receptionistId: 'r4' },
+  { id: 'dp23', name: '沈女士', phone: '176****7788', clinicName: '广州天河店', treatmentType: '正畸', lastAppointmentDate: '2024-06-13', suggestionDate: '2024-06-08', dropoffStage: 'responded_to_arrived', suggestedAction: '提供停车优惠信息', receptionistId: 'r5' },
+  { id: 'dp24', name: '曾先生', phone: '175****9900', clinicName: '上海徐汇店', treatmentType: '儿牙', lastAppointmentDate: '2024-06-16', suggestionDate: '2024-06-11', dropoffStage: 'reminded_to_responded', suggestedAction: '傍晚时段拨打成功率高', receptionistId: 'r6' },
+  { id: 'dp25', name: '彭女士', phone: '174****2233', clinicName: '杭州西湖店', treatmentType: '牙周', lastAppointmentDate: '2024-06-14', suggestionDate: '2024-06-09', dropoffStage: 'assigned_to_reminded', suggestedAction: '优化提醒话术', receptionistId: 'r7' },
+  { id: 'dp26', name: '吕先生', phone: '173****4455', clinicName: '成都锦江店', treatmentType: '种植', lastAppointmentDate: '2024-06-19', suggestionDate: '2024-06-14', dropoffStage: 'responded_to_arrived', suggestedAction: '术前再次电话确认', receptionistId: 'r8' },
+];
+
+export const getWeeklyTrendByClinic = (clinicId: string): ClinicWeeklyTrend[] => {
+  return clinicWeeklyTrends.filter(t => t.clinicId === clinicId);
+};
+
+export const getDropoffPatients = (
+  personType: 'doctor' | 'receptionist',
+  personId: string,
+  stage: string
+): DropoffPatient[] => {
+  return dropoffPatients.filter(p => {
+    if (personType === 'doctor' && p.doctorId !== personId) return false;
+    if (personType === 'receptionist' && p.receptionistId !== personId) return false;
+    if (p.dropoffStage !== stage) return false;
+    return true;
+  });
+};
+
+export const getClinicsByTreatment = (type: TreatmentType): ClinicData[] => {
+  if (type === 'all') {
+    return clinics.map(c => {
+      const breakdown = clinicTreatmentBreakdown.filter(b => b.clinicId === c.id);
+      const appointments = breakdown.reduce((sum, b) => sum + b.appointments, 0);
+      const arrivals = breakdown.reduce((sum, b) => sum + b.arrivals, 0);
+      const noShows = breakdown.reduce((sum, b) => sum + b.noShows, 0);
+      const reschedules = breakdown.reduce((sum, b) => sum + b.reschedules, 0);
+      return calculateRates({ ...c, appointments, arrivals, noShows, reschedules, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 });
+    });
+  }
+
+  const treatmentMap: Record<TreatmentType, string> = {
+    all: '全部',
+    orthodontics: '正畸',
+    implant: '种植',
+    periodontal: '牙周',
+    pediatric: '儿牙',
+    general: '综合',
+  };
+
+  const treatmentName = treatmentMap[type];
+  
+  return clinics.map(c => {
+    const breakdown = clinicTreatmentBreakdown.find(b => b.clinicId === c.id && b.treatment === treatmentName);
+    if (!breakdown) {
+      return calculateRates({ ...c, appointments: 0, arrivals: 0, noShows: 0, reschedules: 0, noShowRate: 0, rescheduleRate: 0, arrivalRate: 0 });
+    }
+    return calculateRates({
+      ...c,
+      appointments: breakdown.appointments,
+      arrivals: breakdown.arrivals,
+      noShows: breakdown.noShows,
+      reschedules: breakdown.reschedules,
+      noShowRate: 0,
+      rescheduleRate: 0,
+      arrivalRate: 0,
+    });
+  });
+};

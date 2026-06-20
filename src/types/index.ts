@@ -1,3 +1,47 @@
+export interface ClinicWeeklyTrend {
+  clinicId: string;
+  clinicName: string;
+  treatment: string;
+  week: string;
+  weekLabel: string;
+  appointments: number;
+  arrivals: number;
+  noShows: number;
+  reschedules: number;
+  noShowRate: number;
+  rescheduleRate: number;
+  arrivalRate: number;
+}
+
+export interface DropoffPatient {
+  id: string;
+  name: string;
+  phone: string;
+  clinicName: string;
+  treatmentType: string;
+  lastAppointmentDate: string;
+  suggestionDate: string;
+  dropoffStage: string;
+  suggestedAction: string;
+  doctorId?: string;
+  receptionistId?: string;
+}
+
+export type DoctorFunnelStage = 'suggestion_to_appointment' | 'appointment_to_reminder' | 'reminder_to_arrival';
+export type ReceptionistFunnelStage = 'assigned_to_reminded' | 'reminded_to_responded' | 'responded_to_arrived';
+
+export const DOCTOR_FUNNEL_STAGES: { value: DoctorFunnelStage; label: string; from: string; to: string }[] = [
+  { value: 'suggestion_to_appointment', label: '医嘱→预约', from: '医嘱开出', to: '完成预约' },
+  { value: 'appointment_to_reminder', label: '预约→提醒', from: '完成预约', to: '前台提醒' },
+  { value: 'reminder_to_arrival', label: '提醒→到诊', from: '前台提醒', to: '实际到诊' },
+];
+
+export const RECEPTIONIST_FUNNEL_STAGES: { value: ReceptionistFunnelStage; label: string; from: string; to: string }[] = [
+  { value: 'assigned_to_reminded', label: '分配→提醒', from: '分配名单', to: '完成提醒' },
+  { value: 'reminded_to_responded', label: '提醒→响应', from: '完成提醒', to: '患者响应' },
+  { value: 'responded_to_arrived', label: '响应→到诊', from: '患者响应', to: '实际到诊' },
+];
+
 export interface ClinicData {
   id: string;
   name: string;

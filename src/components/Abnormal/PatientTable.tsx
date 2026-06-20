@@ -1,9 +1,10 @@
-import { Phone, Clock, AlertTriangle, UserPlus } from 'lucide-react';
+import { Phone, Clock, AlertTriangle, UserPlus, ArrowRight, CheckCircle2 } from 'lucide-react';
 import type { AbnormalPatient } from '@/types';
 
 interface PatientTableProps {
   data: AbnormalPatient[];
   onStatusChange?: (id: string, status: string) => void;
+  onAssigneeStatusChange?: (id: string, assigneeStatus: string) => void;
   selectedIds: string[];
   onSelect: (id: string) => void;
   onSelectAll: () => void;
@@ -14,7 +15,7 @@ interface PatientTableProps {
 const getAbnormalTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
     suture_unvisited: '拆线未回访',
-    ortho_overdue: '复诊超期',
+    ortho_overdue: '正畸超6周未复诊',
     no_show_repeat: '多次爽约',
   };
   return labels[type] || type;
@@ -67,7 +68,18 @@ const getAssigneeStatusClass = (status: string) => {
   }
 };
 
-const PatientTable = ({ data, onStatusChange, selectedIds, onSelect, onSelectAll, onDispatch, customerServices }: PatientTableProps) => {
+const getNextAssigneeStatus = (current: string): { next: string | null; label: string } => {
+  switch (current) {
+    case 'dispatched':
+      return { next: 'processing', label: '标为跟进中' };
+    case 'processing':
+      return { next: 'completed', label: '标为已完成' };
+    default:
+      return { next: null, label: '' };
+  }
+};
+
+const PatientTable = ({ data, onStatusChange, onAssigneeStatusChange, selectedIds, onSelect, onSelectAll, onDispatch, customerServices }: PatientTableProps) => {
   const allSelected = data.length > 0 && data.every((p) => selectedIds.includes(p.id));
 
   return (
@@ -193,6 +205,29 @@ const PatientTable = ({ data, onStatusChange, selectedIds, onSelect, onSelectAll
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {(() => {
+                      const nextStatus = getNextAssigneeStatus(patient.assigneeStatus);
+                      if (nextStatus.next && onAssigneeStatusChange) {
+                        return (
+                          <button
+                            onClick={() => onAssigneeStatusChange(patient.id, nextStatus.next!)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md transition-colors"
+                          >
+                            <ArrowRight className="w-3 h-3" />
+                            {nextStatus.label}
+                          </button>
+                        );
+                      }
+                      if (patient.assigneeStatus === 'completed') {
+                        return (
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-success-600 bg-success-50 rounded-md">
+                            <CheckCircle2 className="w-3 h-3" />
+                            已完成
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                     <button
                       onClick={() => onStatusChange?.(patient.id, 'contacted')}
                       className="px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-md hover:bg-primary-100 transition-colors"
